@@ -122,6 +122,7 @@ npm test
   armadura, água, jangada, zumbis, tempo, potes).
 - `tests/enemies.mjs`: comportamento de cada inimigo, e confirma que cada chefe morre com o número de
   acertos certo e libera a chave.
+- `tests/flow.mjs`: vidas, checkpoint, game over, chave, a cruz obrigatória contra Astaroth e as 2 voltas.
 - `tests/reachability.mjs`: com a física real, verifica que o fim de **cada fase** e o checkpoint são
   alcançáveis a partir do início.
 - `tests/simulate.mjs`: roda todas as fases com um "bot" para garantir que nada quebra.

@@ -86,7 +86,8 @@ export class Renderer {
     this.heroLight = new THREE.PointLight(0xffe0c0, 2.2, 7, 2);
     this.scene.add(this.heroLight);
     this.pool = [];
-    for (let i = 0; i < 8; i++) { const l = new THREE.PointLight(0xffffff, 0, 6, 2); this.scene.add(l); this.pool.push(l); }
+    const nPool = this.low ? 6 : 10;
+    for (let i = 0; i < nPool; i++) { const l = new THREE.PointLight(0xffffff, 0, 6, 2); this.scene.add(l); this.pool.push(l); }
     // pós-processamento
     this.composer = new EffectComposer(r);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
@@ -208,7 +209,7 @@ export class Renderer {
       v.update(e, dt, time);
       if (v.setFlash) v.setFlash(e.flash > 0 && (e.flash % 4) < 2);
       if (v.setOpacity && e.alpha !== undefined) v.setOpacity(Math.max(0.02, Math.min(1, e.alpha)));
-      if (v.lightReq && v.lightReq.intensity > 0.1) lightReqs.push({ x: e.x / 16, y: -e.y / 16 + (v.lightReq.oy || 0), z: z + 0.8, ...v.lightReq });
+      if (v.lightReq && v.lightReq.intensity > 0.1) lightReqs.push({ x: e.x / 16, y: -e.y / 16 + (v.lightReq.oy || 0), z: z + 0.8, prio: 2, ...v.lightReq });
     };
     for (const e of game.enemies) if (e.kind === 'enemy') sync(e, e.type === 'firejet' ? -0.2 : 0);
     for (const s of game.shots) sync(s, 0.35);
@@ -232,13 +233,19 @@ export class Renderer {
     }
     this.effects.ambient(game, dt, game.view);
     this.effects.update(dt);
-    for (const f of this.effects.flashes) lightReqs.push({ x: f.x, y: f.y, z: f.z, color: f.color, intensity: f.intensity, dist: f.dist });
-    // distribui o pool de luzes pelas fontes mais fortes perto da câmera
+    for (const f of this.effects.flashes) lightReqs.push({ x: f.x, y: f.y, z: f.z, color: f.color, intensity: f.intensity, dist: f.dist, prio: 3 });
     const cx = game.cam.x / 16, cy = -game.cam.y / 16;
-    lightReqs.sort((a, b) => (b.intensity / (1 + Math.abs(b.x - cx))) - (a.intensity / (1 + Math.abs(a.x - cx))));
+    // luzes fixas do cenário dentro da área visível
+    const halfW = this.viewWidthPx / 32 + 4, halfH = 10;
+    for (const l of this.scenery.lights) {
+      if (Math.abs(l.x - cx) < halfW && Math.abs(l.y - cy) < halfH) lightReqs.push(l);
+    }
+    // distribui o pool fixo pelas fontes mais relevantes (fortes e perto do centro da tela)
+    const score = (q) => (q.prio || 1) * q.intensity / (1 + Math.hypot(q.x - cx, (q.y - cy) * 1.5) * 0.35);
+    lightReqs.sort((a, b) => score(b) - score(a));
     for (let i = 0; i < this.pool.length; i++) {
       const l = this.pool[i], q = lightReqs[i];
-      if (q) { l.position.set(q.x, q.y, q.z); l.color.setHex(q.color); l.intensity = q.intensity; l.distance = q.dist || 6; }
+      if (q) { l.position.set(q.x, q.y, q.z); l.color.setHex(q.color); l.intensity = q.intensity; l.distance = q.dist || 6; l.decay = q.decay || 2; }
       else l.intensity = 0;
     }
 

@@ -14,10 +14,19 @@ export const THEMES = {
   town: { bg: 0x060918, fog: [0x0d1430, 0.013], hemi: [0x6a86c8, 0x201a18, 0.75], moon: [0xd0dcff, 2.2], moonDir: [0.4, 0.9, 0.5], sky: ['#02030c', '#0e1838', '#2a3a5c'], outdoor: true },
   cave: { bg: 0x060302, fog: [0x0a0604, 0.02], hemi: [0x907060, 0x100604, 0.7], moon: [0xffd0a0, 1.2], moonDir: [0.3, 0.7, 0.8], outdoor: false, dust: true },
   lava: { bg: 0x0c0302, fog: [0x1a0603, 0.012], hemi: [0xb06040, 0x300800, 0.7], moon: [0xffa060, 1.1], moonDir: [-0.2, 0.6, 0.8], outdoor: false, embers: true },
-  tower: { bg: 0x08070a, fog: [0x0c0a10, 0.016], hemi: [0x8a80a0, 0x1a1010, 0.75], moon: [0xd8c8ff, 1.3], moonDir: [0.5, 0.8, 0.6], outdoor: false, dust: true },
-  castle: { bg: 0x07070b, fog: [0x0b0b12, 0.016], hemi: [0x8c90b0, 0x141018, 0.75], moon: [0xd0d8ff, 1.4], moonDir: [-0.4, 0.8, 0.6], outdoor: false, dust: true },
+  tower: { bg: 0x08070a, fog: [0x0c0a10, 0.014], hemi: [0x9a90b0, 0x1a1010, 0.9], moon: [0xd8c8ff, 1.3], moonDir: [0.5, 0.8, 0.6], outdoor: false, dust: true },
+  castle: { bg: 0x07070b, fog: [0x0b0b12, 0.014], hemi: [0x9ca0c0, 0x181420, 1.0], moon: [0xd0d8ff, 1.4], moonDir: [-0.4, 0.8, 0.6], outdoor: false, dust: true },
   throne: { bg: 0x0b0406, fog: [0x140608, 0.012], hemi: [0xa08090, 0x200808, 0.85], moon: [0xffd0c0, 1.5], moonDir: [0.2, 0.8, 0.7], outdoor: false },
 };
+
+// Luzes do cenário são "virtuais": o renderer escolhe a cada quadro as mais próximas da câmera
+// e as atribui a um pool fixo de PointLights (número de luzes constante = shaders estáveis e leves).
+let LIGHTS = [];
+function vlight(x, y, z, color, intensity, dist, decay = 2) {
+  const l = { x, y, z, color, intensity, base: intensity, dist, decay };
+  LIGHTS.push(l);
+  return l;
+}
 
 const matCache = new Map();
 function mat(key, make) {
@@ -235,11 +244,7 @@ function building(group, o) {
       const m = new THREE.Mesh(geoW, lit ? lm : wm);
       m.position.set(wx, wy, z + 0.02);
       group.add(m);
-      if (lit && rnd() < 0.35) {
-        const l = new THREE.PointLight(0xffa050, 6, 6, 2);
-        l.position.set(wx, wy, z + 1.2);
-        group.add(l);
-      }
+      if (lit && rnd() < 0.35) vlight(wx, wy, z + 1.2, 0xffa050, 6, 6);
     }
   }
 }
@@ -296,6 +301,7 @@ void main(){ vec2 uv = vW.xz*0.12 + vec2(uTime*0.02, uTime*0.013);
 
 // -------------------------------------------------------------------------------- construção principal
 export function buildScenery(level, data, renderer) {
+  LIGHTS = [];
   const theme = THEMES[data.theme] || THEMES.graveyard;
   const root = new THREE.Group();
   const anim = [];          // funções update(t, camX, camY)
@@ -483,9 +489,7 @@ export function buildScenery(level, data, renderer) {
       root.add(pl);
       anim.push((t) => { m.uniforms.uTime.value = t; });
       for (let x = hz.x0 + 96; x < hz.x1; x += 256) {
-        const l = new THREE.PointLight(0xff5a10, 30, 16, 1.6);
-        l.position.set(X(x), Y(hz.y) + 1.2, 1.5);
-        root.add(l);
+        const l = vlight(X(x), Y(hz.y) + 1.2, 1.5, 0xff5a10, 30, 16, 1.6);
         anim.push((t) => { l.intensity = 26 + Math.sin(t * 3 + x) * 6; });
       }
     }
@@ -551,7 +555,7 @@ export function buildScenery(level, data, renderer) {
   let sky = null;
   if (theme.outdoor) { sky = makeSky(theme); env.add(sky); }
   return {
-    root, theme, door, sky,
+    root, theme, door, sky, lights: LIGHTS,
     update(t, cx, cy) {
       for (const f of anim) f(t, cx, cy);
       if (sky) sky.position.set(cx, cy, 0);
@@ -678,7 +682,22 @@ const DECOR = {
   },
 
   // ---------------------------------------------------------------- 2: palácio de gelo e cidade
-  2({ root, anim, rnd }) {
+  2({ root, anim, rnd, data }) {
+    // canais sob as pontes da cidade
+    for (const [a, b] of (data.decor && data.decor.bridges) || []) {
+      const w = X(b) - X(a);
+      const m = waterMaterial(0x0a2f7a);
+      const pl = new THREE.Mesh(new THREE.PlaneGeometry(w, 9, Math.ceil(w * 2), 9), m);
+      pl.rotation.x = -Math.PI / 2;
+      pl.position.set((X(a) + X(b)) / 2, Y(460), -2);
+      root.add(pl);
+      anim.push((t) => { m.uniforms.uTime.value = t; });
+      // parapeito de blocos de pedra
+      for (let x = X(a) + 0.5; x < X(b); x += 1) {
+        const blk = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.35, 0.5), stdTex('stone'));
+        blk.position.set(x, Y(432) + 0.17, 1.6); blk.castShadow = true; root.add(blk);
+      }
+    }
     mountains(root, -20, 300, rnd, { base: Y(432) - 1, z: -125, color: 0x5a6084 });
     // torres de gelo
     const towers = [[52, 92], [116, 156], [228, 268], [308, 348], [352, 400], [452, 494], [514, 556], [580, 620], [708, 750]];
@@ -783,11 +802,11 @@ const DECOR = {
   5({ root, anim, rnd, level }) {
     caveBackdrop(root, level, 'castledark', 'castledark', 0x9a90a8);
     supportPillars(root, [[18, 22, 17, 21], [16, 20, 62, 66]]);
-    torches(root, anim, level, rnd, 6);
+    torches(root, anim, level, rnd, 11);
   },
   // ---------------------------------------------------------------- 6: castelo
   6({ root, anim, rnd, level }) {
-    caveBackdrop(root, level, 'castledark', 'castledark', 0xa0a4b8);
+    caveBackdrop(root, level, 'castle', 'castle', 0x8a90a8);
     // janelas gradeadas do salão de Satã
     for (let i = 0; i < 6; i++) {
       const w = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 4), new THREE.MeshStandardMaterial({ map: tex('bars'), emissive: 0x223355, emissiveIntensity: 0.6 }));
@@ -804,7 +823,7 @@ const DECOR = {
       const b = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 2.6), stdTex('drape', { side: THREE.DoubleSide }));
       b.position.set(x, Y(y), -4.8); root.add(b);
     }
-    torches(root, anim, level, rnd, 5);
+    torches(root, anim, level, rnd, 9);
   },
   // ---------------------------------------------------------------- 7: sala do trono
   7({ root, anim, rnd }) {
@@ -895,9 +914,7 @@ function crystals(root, anim, level, rnd, fromX) {
     const m = new THREE.Mesh(mergeGeometries(geos.map(ni)), plain(0x5af0ff, { r: 0.2, emissive: 0x18c8e0, ei: 1.4 }));
     root.add(m);
   }
-  for (const [x, y] of lights.slice(0, 18)) {
-    const l = new THREE.PointLight(0x40e0ff, 6, 7, 2); l.position.set(x, y, -1.5); root.add(l);
-  }
+  for (const [x, y] of lights) vlight(x, y, -1.5, 0x40e0ff, 6, 7);
 }
 
 function supportPillars(root, list) {
@@ -911,19 +928,23 @@ function supportPillars(root, list) {
 function torches(root, anim, level, rnd, every, fixed) {
   const pts = fixed ? fixed.map(([x, y]) => [x, Y(y)]) : [];
   if (!fixed) {
-    for (let ty = 2; ty < level.h; ty += every) for (let tx = 2; tx < level.w - 2; tx += 9) {
-      if (level.tile(tx, ty) === 0 && level.tile(tx, ty + 2) !== 0) pts.push([tx + 0.5, -ty - 0.2]);
+    // uma tocha na parede do fundo a cada ~`every` tiles, 2 tiles acima de cada piso
+    for (let ty = 2; ty < level.h - 1; ty++) {
+      let last = -99;
+      for (let tx = 1; tx < level.w - 1; tx++) {
+        const floor = level.tile(tx, ty) === 0 && level.tile(tx, ty + 1) !== 0 && level.tile(tx, ty - 1) === 0 && level.tile(tx, ty - 2) === 0;
+        if (floor && tx - last >= every) { pts.push([tx + 0.5, -(ty + 1) + 2.3]); last = tx; }
+      }
     }
   }
   const holder = plain(0x2a2420, { m: 0.6, r: 0.5 });
   const flameM = new THREE.MeshBasicMaterial({ color: 0xffa040, transparent: true, opacity: 0.95 });
-  for (const [x, y] of pts.slice(0, 40)) {
+  for (const [x, y] of pts) {
     const h = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.05, 0.6, 6), holder);
     h.position.set(x, y, -4.7); root.add(h);
     const f = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.5, 6), flameM);
     f.position.set(x, y + 0.5, -4.6); root.add(f);
-    const l = new THREE.PointLight(0xff8a30, 10, 9, 1.8);
-    l.position.set(x, y + 0.6, -3.5); root.add(l);
+    const l = vlight(x, y + 0.6, -3.5, 0xff8a30, 10, 9, 1.8);
     const ph = rnd() * 10;
     anim.push((t) => { const k = 1 + Math.sin(t * 9 + ph) * 0.12 + Math.sin(t * 23 + ph) * 0.06; l.intensity = 10 * k; f.scale.set(1, k, 1); });
   }
@@ -934,8 +955,7 @@ function lamp(root, anim, x, y, z) {
   pole.position.set(x, y + 2.1, z); root.add(pole);
   const head = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.6, 0.45), new THREE.MeshStandardMaterial({ color: 0xffd080, emissive: 0xffb050, emissiveIntensity: 2.2 }));
   head.position.set(x, y + 4.4, z); root.add(head);
-  const l = new THREE.PointLight(0xffb060, 14, 10, 1.8);
-  l.position.set(x, y + 4.2, z + 0.6); root.add(l);
+  vlight(x, y + 4.2, z + 0.6, 0xffb060, 14, 10, 1.8);
 }
 
 function grassTufts(root, level, rnd, stage) {
