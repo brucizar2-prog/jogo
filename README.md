@@ -8,16 +8,23 @@ sensação do fliperama.
 
 ## Como jogar
 
-Não precisa de build nem de dependências. É só servir a pasta por HTTP, porque os módulos ES não
-funcionam via `file://`:
+1. Baixe o ZIP **desta branch**:
+   <https://github.com/brucizar2-prog/jogo/archive/refs/heads/claude/epic-mayer-91hm4l.zip>.
+   Por enquanto a branch `main` só tem o README, então o botão "Download ZIP" da página inicial do
+   repositório baixa uma pasta vazia.
+2. Extraia o ZIP. No Windows, use "Extrair tudo": abrir o arquivo de dentro do ZIP não funciona.
+3. Dê **dois cliques em `jogar.html`**. Abre em qualquer navegador moderno (Chrome, Edge, Firefox,
+   Safari), sem instalar nada e sem internet.
+
+O `jogar.html` é o jogo inteiro num arquivo só. O `index.html` aberto com dois cliques redireciona
+para ele.
+
+Para desenvolver, sirva a pasta por HTTP e use o `index.html`, que carrega os módulos de `src/`:
 
 ```bash
 npm start            # usa tools/serve.mjs (Node 18+), abre em http://localhost:8080
-# ou
-python3 -m http.server 8080
+npm run build        # regenera jogar.html depois de editar src/ ou css/ (requer npm install)
 ```
-
-Também funciona publicado direto no GitHub Pages.
 
 | Ação | Teclado | Controle |
 |---|---|---|
@@ -110,6 +117,8 @@ src/render/               three.js: cenário 3D por tema, modelos 2.5D, efeitos,
 vendor/three/             three.js r169 (MIT), embutido para funcionar offline
 tests/                    testes headless (Node)
 tools/serve.mjs           servidor estático sem dependências
+tools/build.mjs           gera jogar.html (jogo inteiro num único arquivo)
+jogar.html                versão de arquivo único, abre com dois cliques
 ```
 
 ## Testes

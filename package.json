@@ -6,6 +6,10 @@
   "description": "Remake 3D/2.5D de fã do arcade Ghosts'n Goblins (1985)",
   "scripts": {
     "start": "node tools/serve.mjs 8080",
+    "build": "node tools/build.mjs",
     "test": "node tests/mechanics.mjs && node tests/enemies.mjs && node tests/flow.mjs && node tests/reachability.mjs && node tests/simulate.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
   }
 }
