@@ -52,9 +52,7 @@ export default {
   platforms: [
     {"x":692,"y":360,"w":60,"h":8,"kind":"ice","path":[[676,360],[728,360]],"speed":0.5}
   ],
-  spawners: [
-    {"t":"knight","x0":2200,"x1":3000,"max":2}
-  ],
+  spawners: [],
   entities: [
     {"t":"item","kind":"bag","x":167,"y":192},
     {"t":"item","kind":"bag","x":350,"y":112},

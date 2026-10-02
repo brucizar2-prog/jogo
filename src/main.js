@@ -79,6 +79,15 @@ class App {
   startStage(fromCheckpoint) {
     const s = this.session;
     this.game = new Game(this, s.stage, { fromCheckpoint, viewW: this.renderer.viewWidthPx });
+    // depuração: ?stage=1&x=1700&y=176 começa numa posição específica
+    if (params.has('x') && !this._usedPos) {
+      this._usedPos = true;
+      const P = this.game.player;
+      P.x = +params.get('x'); if (params.has('y')) P.y = +params.get('y');
+      this.game.cam.x = P.x; this.game.cam.y = P.y - 60;
+      this.game.updateCamera(true);
+      this.game.spawnPlacements();
+    }
     this.renderer.loadStage(this.game);
     this.hud.show(true);
     this.hud.setScreen('');

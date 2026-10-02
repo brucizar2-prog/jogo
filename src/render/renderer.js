@@ -11,6 +11,13 @@ import { createModel, ArthurModel, M } from './models.js';
 import { Effects } from './effects.js';
 import { tex } from './textures.js';
 
+// Proteção contra NaN: normais "flat" calculadas por derivadas podem virar NaN em triângulos
+// minúsculos/distantes, e o bloom espalharia o pixel inválido pela tela inteira.
+THREE.ShaderChunk.normal_fragment_begin = THREE.ShaderChunk.normal_fragment_begin.replace(
+  'vec3 normal = normalize( cross( fdx, fdy ) );',
+  'vec3 fn_ = cross( fdx, fdy ); vec3 normal = dot( fn_, fn_ ) > 1e-20 ? normalize( fn_ ) : vec3( 0.0, 0.0, 1.0 );');
+THREE.ShaderChunk.opaque_fragment = 'if ( any( isnan( outgoingLight ) ) || any( isinf( outgoingLight ) ) ) outgoingLight = vec3( 0.0 );\n' + THREE.ShaderChunk.opaque_fragment;
+
 const VIEW_H = 14;        // altura visível (em tiles) no plano de jogo = 224 px do arcade
 const FOV = 34;
 
@@ -45,8 +52,12 @@ const RetroShader = {
 export class Renderer {
   constructor(canvas) {
     this.canvas = canvas;
-    const r = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-    r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    // qualidade automática: aparelhos de toque/modestos usam resolução e sombras menores
+    const q = new URLSearchParams(location.search).get('q');
+    const mobile = matchMedia('(pointer: coarse)').matches;
+    this.low = q === 'low' || (q !== 'high' && (mobile || (navigator.hardwareConcurrency || 8) <= 4));
+    const r = new THREE.WebGLRenderer({ canvas, antialias: !this.low, powerPreference: 'high-performance' });
+    r.setPixelRatio(Math.min(window.devicePixelRatio || 1, this.low ? 1 : 1.75));
     r.outputColorSpace = THREE.SRGBColorSpace;
     r.toneMapping = THREE.ACESFilmicToneMapping;
     r.toneMappingExposure = 1.05;
@@ -63,7 +74,7 @@ export class Renderer {
     this.scene.add(this.hemi);
     this.sun = new THREE.DirectionalLight(0xc8d6ff, 2);
     this.sun.castShadow = true;
-    this.sun.shadow.mapSize.set(2048, 2048);
+    this.sun.shadow.mapSize.set(this.low ? 1024 : 2048, this.low ? 1024 : 2048);
     const sc = this.sun.shadow.camera;
     sc.left = -22; sc.right = 22; sc.top = 14; sc.bottom = -14; sc.near = 1; sc.far = 80;
     this.sun.shadow.bias = -0.0006;
@@ -79,7 +90,7 @@ export class Renderer {
     // pós-processamento
     this.composer = new EffectComposer(r);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
-    this.bloom = new UnrealBloomPass(new THREE.Vector2(512, 512), 0.55, 0.45, 0.82);
+    this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.55, 0.45, 0.82);
     this.composer.addPass(this.bloom);
     this.retro = new ShaderPass(RetroShader);
     this.composer.addPass(this.retro);
@@ -103,6 +114,7 @@ export class Renderer {
     this.w = w; this.h = h;
     this.r.setSize(w, h, false);
     this.composer.setSize(w, h);
+    if (this.low) this.bloom.setSize(Math.floor(w / 2), Math.floor(h / 2));
     this.camera.aspect = w / h;
     // em telas estreitas (retrato) garante ao menos a largura da tela original (16 tiles)
     this.zoomFix = Math.max(1, (16 / VIEW_H) / this.camera.aspect);

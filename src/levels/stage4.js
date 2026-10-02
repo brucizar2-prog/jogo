@@ -34,9 +34,7 @@ export default {
     {"x":996,"y":146,"w":48,"h":10,"kind":"stone","path":[[964,146],[1028,146]],"speed":0.8,"phase":0.18},
     {"x":1040,"y":194,"w":48,"h":10,"kind":"stone","path":[[1014,194],[1066,194]],"speed":0.6,"phase":0.55}
   ],
-  spawners: [
-    {"t":"bat","x0":100,"x1":1100,"max":2}
-  ],
+  spawners: [],
   entities: [
     {"t":"arremer","x":1180,"y":176},
     {"t":"firejet","x":1520,"y":208},

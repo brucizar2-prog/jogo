@@ -13,7 +13,7 @@ export const THEMES = {
   graveyard: { bg: 0x070a1c, fog: [0x10142c, 0.016], hemi: [0x6a78c0, 0x2a1a10, 0.75], moon: [0xc8d6ff, 2.2], moonDir: [-0.5, 0.9, 0.55], sky: ['#02040f', '#141433', '#3a2846'], outdoor: true, mist: true },
   town: { bg: 0x060918, fog: [0x0d1430, 0.013], hemi: [0x6a86c8, 0x201a18, 0.75], moon: [0xd0dcff, 2.2], moonDir: [0.4, 0.9, 0.5], sky: ['#02030c', '#0e1838', '#2a3a5c'], outdoor: true },
   cave: { bg: 0x060302, fog: [0x0a0604, 0.02], hemi: [0x907060, 0x100604, 0.7], moon: [0xffd0a0, 1.2], moonDir: [0.3, 0.7, 0.8], outdoor: false, dust: true },
-  lava: { bg: 0x120402, fog: [0x2a0a04, 0.018], hemi: [0xb06040, 0x300800, 0.7], moon: [0xffa060, 1.1], moonDir: [-0.2, 0.6, 0.8], outdoor: false, embers: true },
+  lava: { bg: 0x0c0302, fog: [0x1a0603, 0.012], hemi: [0xb06040, 0x300800, 0.7], moon: [0xffa060, 1.1], moonDir: [-0.2, 0.6, 0.8], outdoor: false, embers: true },
   tower: { bg: 0x08070a, fog: [0x0c0a10, 0.016], hemi: [0x8a80a0, 0x1a1010, 0.75], moon: [0xd8c8ff, 1.3], moonDir: [0.5, 0.8, 0.6], outdoor: false, dust: true },
   castle: { bg: 0x07070b, fog: [0x0b0b12, 0.016], hemi: [0x8c90b0, 0x141018, 0.75], moon: [0xd0d8ff, 1.4], moonDir: [-0.4, 0.8, 0.6], outdoor: false, dust: true },
   throne: { bg: 0x0b0406, fog: [0x140608, 0.012], hemi: [0xa08090, 0x200808, 0.85], moon: [0xffd0c0, 1.5], moonDir: [0.2, 0.8, 0.7], outdoor: false },
@@ -287,7 +287,7 @@ uniform float uTime;
 void main(){ vec2 uv = vW.xz*0.12 + vec2(uTime*0.02, uTime*0.013);
         vec2 d = vec2(sin(vW.z*1.3+uTime)*0.03, cos(vW.x*1.1+uTime*0.7)*0.03);
         vec3 c = texture2D(uMap, uv+d).rgb; vec3 c2 = texture2D(uMap, uv*0.5-d+vec2(0.3,0.1)).rgb;
-        vec3 col = (c*0.7+c2*0.5)*2.2; col += vec3(1.0,0.35,0.05)*0.35;
+        vec3 col = (c*0.7+c2*0.5)*1.15; col += vec3(0.6,0.12,0.02)*0.25;
         gl_FragColor=vec4(col,1.0);
 #include <fog_fragment>
 }`,
@@ -397,7 +397,7 @@ export function buildScenery(level, data, renderer) {
   const owMats = {
     grass: stdTex('grass'), roots: stdTex('roots'), icetop: stdTex('icetop', { r: 0.3 }), ice: stdTex('ice', { r: 0.4, emissive: 0x0a2a44, ei: 0.4 }),
     purple: stdTex('purplebrick'), castle: stdTex('castle'), wood: stdTex('wood'), brownrock: stdTex('brownrock'), bridge: stdTex('bridge'),
-    floor: stdTex('greenbuilding'), street: stdTex('street'),
+    floor: stdTex('greenbuilding'), street: stdTex('street'), tealrock: stdTex('tealrock'),
   };
   for (const r of runs) {
     const x0 = X(r.x0), x1 = X(r.x1), yt = Y(r.y);
@@ -421,7 +421,8 @@ export function buildScenery(level, data, renderer) {
     } else if (kind === 'castlefloor') {
       owb.box(x0, yt - 1, -3.2, x1, yt, 0.9, { top: 'castle', front: 'castle', bottom: 'castle', left: 'castle', right: 'castle' }, 0.5);
     } else {
-      owb.box(x0, yt - 0.5, -2.2, x1, yt, 0.9, { top: 'brownrock', front: 'brownrock', left: 'brownrock', right: 'brownrock', bottom: 'brownrock' }, 0.25);
+      const rt = r.zone === 'teal' ? 'tealrock' : 'brownrock';
+      owb.box(x0, yt - 0.5, -2.2, x1, yt, 0.9, { top: rt, front: rt, left: rt, right: rt, bottom: rt }, 0.25);
     }
   }
   const owGroup = owb.build(owMats);
@@ -476,9 +477,9 @@ export function buildScenery(level, data, renderer) {
       root.add(back);
     } else {
       const m = lavaMaterial();
-      const pl = new THREE.Mesh(new THREE.PlaneGeometry(w + 2, 16, Math.ceil(w), 16), m);
+      const pl = new THREE.Mesh(new THREE.PlaneGeometry(w + 2, 9, Math.ceil(w), 9), m);
       pl.rotation.x = -Math.PI / 2;
-      pl.position.set((X(hz.x0) + X(hz.x1)) / 2, Y(hz.y) + 0.1, -3);
+      pl.position.set((X(hz.x0) + X(hz.x1)) / 2, Y(hz.y) + 0.1, -2.5);
       root.add(pl);
       anim.push((t) => { m.uniforms.uTime.value = t; });
       for (let x = hz.x0 + 96; x < hz.x1; x += 256) {
@@ -726,6 +727,16 @@ const DECOR = {
   // ---------------------------------------------------------------- 3: cavernas
   3({ root, anim, rnd, level }) {
     caveBackdrop(root, level, 'cavewall', 'tealdark');
+    // massa de rocha atrás da plataforma elevada (o caminho de baixo passa na frente)
+    {
+      const shape = new THREE.Shape();
+      shape.moveTo(X(240), Y(896)); shape.lineTo(X(258), Y(816) - 0.3); shape.lineTo(X(800), Y(816) - 0.3); shape.lineTo(X(820), Y(896)); shape.closePath();
+      const geo = new THREE.ExtrudeGeometry(shape, { depth: 2.6, bevelEnabled: true, bevelThickness: 0.3, bevelSize: 0.3, bevelSegments: 1 });
+      const uv = geo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * 0.25, uv.getY(i) * 0.25);
+      const m = new THREE.Mesh(geo, stdTex('brownrock'));
+      m.position.z = -4.9; m.receiveShadow = true;
+      root.add(m);
+    }
     stalactites(root, level, rnd, (tx) => tx < 64 ? 0x8a6038 : 0x0f7a68);
     crystals(root, anim, level, rnd, 64);
   },

@@ -18,6 +18,7 @@ export class Input {
     this.prev = {};
     this.pressed = {};
     this.kb = {};
+    this.latch = {};     // toques muito rápidos (entre dois quadros) não se perdem
     this.touch = {};
     this.pad = {};
     this.anyKey = false;
@@ -25,7 +26,7 @@ export class Input {
     for (const b of BUTTONS) { this.held[b] = this.prev[b] = this.pressed[b] = false; }
     window.addEventListener('keydown', (e) => {
       const b = KEYMAP[e.code];
-      if (b) { this.kb[b] = true; e.preventDefault(); }
+      if (b) { if (!this.kb[b]) this.latch[b] = true; this.kb[b] = true; e.preventDefault(); }
       this.anyKey = true;
       this.debugKey = e.code;
     });
@@ -53,7 +54,7 @@ export class Input {
       return el && el.dataset && el.dataset.k ? el.dataset.k : null;
     };
     const onDown = (e) => {
-      for (const t of e.changedTouches) { const k = hit(t.clientX, t.clientY); if (k) active.set(t.identifier, k); }
+      for (const t of e.changedTouches) { const k = hit(t.clientX, t.clientY); if (k) { active.set(t.identifier, k); this.latch[k] = true; } }
       this.anyKey = true; update(); e.preventDefault();
     };
     const onMove = (e) => {
@@ -96,7 +97,8 @@ export class Input {
     for (const b of BUTTONS) {
       this.prev[b] = this.held[b];
       this.held[b] = !!(this.kb[b] || this.touch[b] || this.pad[b]);
-      this.pressed[b] = this.held[b] && !this.prev[b];
+      this.pressed[b] = (this.held[b] && !this.prev[b]) || !!this.latch[b];
+      if (this.latch[b]) { this.held[b] = true; this.latch[b] = false; }
     }
   }
 

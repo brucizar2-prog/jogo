@@ -24,7 +24,9 @@ export default {
   oneways: [],
   hazards: [],
   platforms: [],
-  spawners: [],
+  spawners: [
+    {"t":"pig","x0":2400,"x1":3100,"max":2}
+  ],
   entities: [
     {"t":"tower","x":608,"y":896},
     {"t":"tower","x":752,"y":816},
@@ -54,7 +56,10 @@ export default {
     {"t":"item","kind":"coin","x":302,"y":816},
     {"t":"item","kind":"coin","x":431,"y":816},
     {"t":"item","kind":"coin","x":784,"y":896},
-    {"t":"item","kind":"coin","x":2448,"y":176}
+    {"t":"item","kind":"coin","x":2448,"y":176},
+    {"t":"devilwin","x":1150,"y":820},
+    {"t":"devilwin","x":1480,"y":700},
+    {"t":"devilwin","x":2350,"y":300}
   ],
   boss: {"t":"dragon","x":3410,"y":840,"trigger":3150,"arena":[3200,3600]},
   door: {"x":3472,"y":880,"w":32,"h":64},
