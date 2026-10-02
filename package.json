@@ -1,0 +1,11 @@
+{
+  "name": "ghosts-n-goblins-3d",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Remake 3D/2.5D de fã do arcade Ghosts'n Goblins (1985)",
+  "scripts": {
+    "start": "node tools/serve.mjs 8080",
+    "test": "node tests/simulate.mjs"
+  }
+}

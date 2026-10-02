@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#05060d">
+  <title>Ghosts'n Goblins 3D — Remake</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Cinzel+Decorative:wght@700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three/three.module.min.js",
+      "three/addons/": "./vendor/three/addons/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="app">
+    <canvas id="view"></canvas>
+    <div id="hud" class="hidden">
+      <div class="hud-top">
+        <div class="hud-block"><span class="lbl red">JOGADOR</span><span id="hud-score">0</span></div>
+        <div class="hud-block center"><span class="lbl red">RECORDE</span><span id="hud-top">10000</span></div>
+        <div class="hud-block right"><span class="lbl">TEMPO</span><span id="hud-time">3:00</span></div>
+      </div>
+      <div class="hud-bottom">
+        <div id="hud-lives"></div>
+        <div id="hud-stage"></div>
+        <div id="hud-weapon"></div>
+      </div>
+    </div>
+    <div id="screen" class="screen"></div>
+    <div id="banner" class="banner hidden"></div>
+    <div id="fade"></div>
+    <div id="touch" class="hidden">
+      <div class="pad">
+        <button data-k="left" aria-label="esquerda">◀</button>
+        <button data-k="up" aria-label="cima">▲</button>
+        <button data-k="down" aria-label="baixo">▼</button>
+        <button data-k="right" aria-label="direita">▶</button>
+      </div>
+      <div class="btns">
+        <button data-k="fire" aria-label="atacar">⚔</button>
+        <button data-k="jump" aria-label="pular">⤒</button>
+      </div>
+      <button class="start" data-k="start" aria-label="start">START</button>
+    </div>
+    <noscript>Este jogo precisa de JavaScript.</noscript>
+  </div>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
