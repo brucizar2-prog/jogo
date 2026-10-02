@@ -100,17 +100,19 @@ export class Game {
       if (yt > ty + 16) ty = yt - 16;
     }
     let minX = this.viewW / 2, maxX = lv.pw - this.viewW / 2;
+    if (maxX < minX) minX = maxX = lv.pw / 2;          // fase mais estreita que a tela
+    tx = Math.max(minX, Math.min(maxX, tx));
     if (this.bossTriggered && this.data.boss && this.data.boss.arena) {
+      // a arena trava a câmera como no arcade (não volta para a esquerda)
       const a = this.data.boss.arena;
-      minX = Math.max(minX, a[0] + SCREEN_W / 2);
-      if (a[1] - a[0] > SCREEN_W) maxX = Math.min(maxX, a[1] - SCREEN_W / 2);
+      const lockMin = a[0] + SCREEN_W / 2;
+      const lockMax = Math.max(lockMin, Math.min(maxX, a[1] - SCREEN_W / 2));
+      if (lv.pw > SCREEN_W) tx = Math.max(lockMin, Math.min(lockMax, tx));
       if (this.data.boss.arenaY) {
         const ay = this.data.boss.arenaY;
-        ty = Math.min(ty, Math.max(ay[0] + SCREEN_H / 2 - 16, ty));
+        ty = (ay[0] + ay[1]) / 2 + 8;
       }
     }
-    if (maxX < minX) { minX = maxX = lv.pw / 2; }
-    tx = Math.max(minX, Math.min(maxX, tx));
     const minY = SCREEN_H / 2 - 16, maxY = Math.max(minY, lv.ph - SCREEN_H / 2 + 8);
     if (this.data.camera && this.data.camera.lockY !== undefined) ty = this.data.camera.lockY;
     else ty = Math.max(minY, Math.min(maxY, ty));
@@ -267,7 +269,16 @@ export class Game {
     if (!b || this.bossTriggered) return;
     let trig = false;
     if (typeof b.trigger === 'number') trig = P.x >= b.trigger;
-    else if (typeof b.trigger === 'string' && b.trigger.startsWith('y<')) trig = P.y < parseFloat(b.trigger.slice(2));
+    else if (typeof b.trigger === 'string') {
+      // condições como "y<150&x>470"
+      trig = b.trigger.split('&').every((c) => {
+        const m = /^([xy])([<>])(-?\d+)$/.exec(c.trim());
+        if (!m) return false;
+        const v = m[1] === 'x' ? P.x : P.y;
+        return m[2] === '<' ? v < +m[3] : v > +m[3];
+      });
+      if (P.state === 'climb') trig = false;
+    }
     if (!trig) return;
     this.bossTriggered = true;
     this.app.music && this.app.music.play('boss');
@@ -348,6 +359,8 @@ export class Game {
     if (this.shakeT > 0) this.shakeT--;
     lv.update();
     P.update(input);
+    // dentro da arena do chefe a tela fica travada: o Arthur não sai pela esquerda
+    if (this.bossTriggered && this.data.boss.arena && lv.pw > SCREEN_W) P.x = Math.max(P.x, this.data.boss.arena[0] + 8);
 
     // checkpoint (meio da fase)
     const cp = this.data.checkpoint;

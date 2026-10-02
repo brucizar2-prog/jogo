@@ -497,7 +497,8 @@ export function buildScenery(level, data, renderer) {
     const d = data.door;
     door = new THREE.Group();
     const leafGeo = new THREE.BoxGeometry(X(d.w) / 2, d.h / 16, 0.25);
-    const leafMat = mat('doorleaf', () => new THREE.MeshStandardMaterial({ map: tex('metal'), color: 0x4c5a48, roughness: 0.5, metalness: 0.7 }));
+    const leafMat = mat('doorleaf', () => new THREE.MeshStandardMaterial({ map: tex('wood'), color: 0xa07850, roughness: 0.7, metalness: 0.1 }));
+    const bandMat = plain(0x3a3a40, { m: 0.8, r: 0.4 });
     const studs = plain(0x1c1c1c, { m: 0.8, r: 0.4 });
     const leaves = [];
     for (const side of [-1, 1]) {
@@ -507,6 +508,11 @@ export function buildScenery(level, data, renderer) {
       leaf.position.set(-side * X(d.w) / 4, d.h / 32, 0);
       leaf.castShadow = true;
       pivot.add(leaf);
+      for (const by of [0.15, 0.5, 0.85]) {
+        const band = new THREE.Mesh(new THREE.BoxGeometry(X(d.w) / 2, 0.12, 0.3), bandMat);
+        band.position.set(-side * X(d.w) / 4, (d.h / 16) * by, 0.02);
+        pivot.add(band);
+      }
       for (let i = 0; i < 6; i++) {
         const s = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 4), studs);
         s.position.set(-side * X(d.w) / 4 + ((i % 2) - 0.5) * 0.7, 0.6 + Math.floor(i / 2) * 1.2, 0.14);
@@ -651,12 +657,12 @@ const DECOR = {
     { const m = new THREE.Mesh(mergeGeometries(canG.map(ni)), stdTex('leaves', { flat: true })); m.castShadow = true; root.add(m); }
     // muralha do castelo no fim da fase
     {
-      const wall = new THREE.Mesh(new THREE.BoxGeometry(X(3584) - X(3424) + 2, 14, 4), stdTex('stone'));
-      const uv = wall.geometry.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * 3, uv.getY(i) * 4);
-      wall.position.set((X(3424) + X(3584)) / 2 + 1, groundY + 7, -3.2);
+      const wall = new THREE.Mesh(new THREE.BoxGeometry(X(3584) - X(3424) + 24, 14, 4), stdTex('stone'));
+      const uv = wall.geometry.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * 8, uv.getY(i) * 4);
+      wall.position.set((X(3424) + X(3584)) / 2 + 12, groundY + 7, -3.2);
       wall.receiveShadow = true; wall.castShadow = true;
       root.add(wall);
-      for (let x = X(3424); x < X(3584) + 2; x += 1.5) {
+      for (let x = X(3424); x < X(3584) + 24; x += 1.5) {
         const m = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1, 4), stdTex('stone'));
         m.position.set(x + 0.45, groundY + 14.5, -3.2);
         root.add(m);

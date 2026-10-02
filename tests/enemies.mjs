@@ -49,7 +49,7 @@ for (const [st, t] of [[1, 'unicorn'], [2, 'unicorn2'], [3, 'dragon'], [4, 'drag
     const b = g.data.boss;
     // teleporta o Arthur até o gatilho
     if (typeof b.trigger === 'number') { P(g).x = Math.max(b.trigger + 4, b.arena[0] + 40); P(g).y = st === 3 ? 880 : st === 2 ? 432 : 176; }
-    else { P(g).x = st === 5 ? 300 : 240; P(g).y = st === 5 ? 96 : 112; }
+    else { P(g).x = st === 5 ? 520 : 240; P(g).y = st === 5 ? 96 : 112; }
     P(g).onGround = false;
     run(g, 120);
     if (!g.bosses.length) throw new Error('chefe não apareceu');

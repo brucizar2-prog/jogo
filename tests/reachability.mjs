@@ -91,7 +91,7 @@ export function analyze(stage, verbose = false) {
     let ok;
     if (data.door) ok = Math.abs(p.x - (data.door.x + data.door.w / 2)) < 40 && Math.abs(p.y - data.door.y) < 20;
     else ok = Math.abs(p.x - b.x) < 120;
-    if (typeof b.trigger === 'string') ok = ok || p.y < parseFloat(b.trigger.slice(2));
+    if (typeof b.trigger === 'string') ok = ok || b.trigger.split('&').every((c) => { const m = /^([xy])([<>])(-?\d+)$/.exec(c); const v = m[1] === 'x' ? p.x : p.y; return m[2] === '<' ? v < +m[3] : v > +m[3]; });
     if (ok) goalOk = true;
     if (!best || p.x > best.x) best = p;
   }

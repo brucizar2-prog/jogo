@@ -40,6 +40,10 @@ class App {
     if (st >= 1 && st <= 7) { this.session.stage = st; this.startStage(false); }
     else this.toTitle();
     requestAnimationFrame((t) => this.loop(t));
+    // pausa automática quando a janela perde o foco
+    const autoPause = () => { if (this.state === 'play') { this.setState('pause'); this.hud.setBanner('<span class="big">PAUSA</span>'); this.music.stop(); } };
+    window.addEventListener('blur', autoPause);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) autoPause(); });
   }
 
   newSession() {

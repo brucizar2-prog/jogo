@@ -190,7 +190,10 @@ export class ArthurModel extends Model {
     };
     this.armL = mkArm(0.3); this.armR = mkArm(-0.3);
     // arma na mão (aparece no arremesso)
-    this.handWeapon = piv(this.armR.elbow, 0, -0.3, 0);
+    this.handWeapon = piv(this.armR.elbow, 0, -0.32, 0);
+    this.handWeapon.rotation.z = -Math.PI / 2;
+    this.heldType = null;
+    this.head.scale.setScalar(1.18);
     this.armorParts = [this.pelvisA, this.tassets, this.chestA, this.chestRidge, this.belt, this.helmet, this.helmBack, this.cheekL, this.cheekR, this.crest, this.plume,
       ...this.legL.armor, ...this.legR.armor, ...this.armL.armor, ...this.armR.armor];
     this.skinParts = [this.boxers, this.chestS, this.hair, ...this.legL.skin, ...this.legR.skin, ...this.armL.skin, ...this.armR.skin];
@@ -293,7 +296,14 @@ export class ArthurModel extends Model {
         AR.arm.rotation.z = -2.2 + k * 3.6;
         AR.elbow.rotation.z = 0.3;
         if (p.airThrowT > 0) p.airThrowT--;
-      }
+        // a arma aparece na mão só no começo do movimento
+        if (this.heldType !== p.weapon) {
+          this.handWeapon.clear();
+          const w = weaponMesh(p.weapon); w.scale.setScalar(0.7); w.position.x = 0.15;
+          this.handWeapon.add(w); this.heldType = p.weapon;
+        }
+        this.handWeapon.visible = k < 0.55;
+      } else this.handWeapon.visible = false;
     }
     this.hips.position.y = hipsY;
     this.torso.rotation.z = lean;
