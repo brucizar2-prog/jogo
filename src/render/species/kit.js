@@ -56,11 +56,14 @@ export function humanoidBones(p) {
 // ------------------------------------------------------------------ cortes e padrões
 // corte de bainha rasgada: remove tudo abaixo de uma linha serrilhada em torno do eixo (cx, cz)
 export function hemCut(y0, opts = {}) {
-  const { amp = 0.04, teeth = 9, cx = 0, cz = 0, seed = 1, below = true, noise = 0.02 } = opts;
+  const { amp = 0.04, teeth = 9, cx = 0, cz = 0, seed = 1, below = true, noise = 0.02, inner = 0.05 } = opts;
   return (x, y, z) => {
     const a = Math.atan2(z - cz, x - cx);
-    const saw = Math.abs(((a / (Math.PI * 2)) * teeth + seed * 0.37) % 1 - 0.5) * 2;
-    const yy = y0 + amp * saw + noise * (fbm3(x * 9 + seed, 0, z * 9, 2) - 0.5) * 2;
+    const u = (a / (Math.PI * 2)) * teeth + seed * 0.37;
+    const saw = Math.abs(u - Math.floor(u) - 0.5) * 2;
+    // perto do eixo o ângulo é instável: a bainha fica plana lá dentro
+    const w = Math.min(1, Math.max(0, (Math.hypot(x - cx, z - cz) - inner) / inner));
+    const yy = y0 + w * (amp * saw + noise * (fbm3(x * 9 + seed, 0, z * 9, 2) - 0.5) * 2);
     return below ? yy - y : y - yy;
   };
 }
@@ -75,7 +78,8 @@ export function sleeveCut(a, b, frac, opts = {}) {
     const t = px * u[0] + py * u[1] + pz * u[2];
     // ângulo em volta do eixo para serrilhar
     const ang = Math.atan2(pz * u[0] - px * u[2], py);
-    const saw = Math.abs(((ang / (Math.PI * 2)) * teeth + seed * 0.31) % 1 - 0.5) * 2;
+    const uu = (ang / (Math.PI * 2)) * teeth + seed * 0.31;
+    const saw = Math.abs(uu - Math.floor(uu) - 0.5) * 2;
     const lim = L * frac + amp * saw;
     // só corta a parte "abaixo" do limite e ainda dentro do cilindro de influência do membro
     const radial = Math.hypot(px - t * u[0], py - t * u[1], pz - t * u[2]);
