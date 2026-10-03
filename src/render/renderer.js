@@ -7,7 +7,8 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { buildScenery, THEMES } from './scenery.js';
-import { createModel, ArthurModel, M } from './models.js';
+import { createModel, M } from './models.js';
+import { ArthurOrganic, prewarm, prewarmStep } from './creatures.js';
 import { Effects } from './effects.js';
 import { tex } from './textures.js';
 
@@ -48,6 +49,18 @@ const RetroShader = {
       gl_FragColor = vec4(col, 1.0);
     }`,
 };
+
+// espécies que podem aparecer numa fase (para gerar as malhas antes de começar)
+const ENTITY_TO_CREATURE = { crow: 'crow', raven: 'raven', plant: 'plant', arremer: 'arremer', bigman: 'bigman', bat: 'bat', skull: 'skeleton', devilwin: 'devil', lavadevil: 'lavadevil', unicorn: 'unicorn', dragonmid: 'dragon', princess: 'princess' };
+const BOSS_TO_CREATURE = { unicorn: 'unicorn', unicorn2: 'unicorn', dragon: 'dragon', satan: 'satan', satan2: 'satan', astaroth: 'astaroth' };
+function stageCreatures(data) {
+  const set = new Set();
+  for (const e of data.entities || []) if (ENTITY_TO_CREATURE[e.t]) set.add(ENTITY_TO_CREATURE[e.t]);
+  for (const sp of data.spawners || []) set.add(sp.t);
+  if (data.boss) set.add(BOSS_TO_CREATURE[data.boss.t]);
+  if ((data.solids || []).length) set.add('magician');
+  return [...set];
+}
 
 export class Renderer {
   constructor(canvas) {
@@ -134,6 +147,7 @@ export class Renderer {
   loadStage(game) {
     this.clearStage();
     const data = game.data;
+    this.prewarmMs = prewarm(stageCreatures(data));
     const theme = THEMES[data.theme];
     this.theme = theme;
     this.scene.background = new THREE.Color(theme.bg);
@@ -172,7 +186,7 @@ export class Renderer {
       this.scene.add(g);
       return g;
     });
-    this.player = new ArthurModel();
+    this.player = new ArthurOrganic();
     this.scene.add(this.player.obj);
     this.snapCamera = true;
   }
@@ -193,6 +207,7 @@ export class Renderer {
 
   // ------------------------------------------------------------------ quadro
   frame(game, dt, time) {
+    prewarmStep();
     const seen = new Set();
     const lightReqs = [];
     const sync = (e, z = 0) => {

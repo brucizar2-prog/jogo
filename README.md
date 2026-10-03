@@ -1,7 +1,15 @@
 # Ghosts'n Goblins 3D: remake de fã
 
 Recriação do arcade **Ghosts'n Goblins** (Capcom, 1985) com **cenário em 3D** e **personagens 2.5D**:
-modelos 3D articulados presos ao plano de jogo, como num jogo de plataforma clássico.
+modelos 3D presos ao plano de jogo, como num jogo de plataforma clássico.
+
+Os personagens são **orgânicos**: cada um é esculpido em código com formas que se fundem suavemente
+(elipsoides, membros afunilados, músculos), como argila digital. A escultura vira uma malha lisa
+única, com esqueleto, e as articulações dobram como pele. São usados materiais de pele, metal
+polido, tecido, cabelo e escamas, além de uma luz de contorno que destaca os personagens do cenário.
+A armadura do Arthur é uma camada por cima do corpo: quando ele perde a armadura, aparece o corpo de
+verdade, de cueca de bolinhas.
+
 O visual é moderno (iluminação dinâmica, sombras, bloom, neblina, partículas), mas a paleta, as
 silhuetas e o ritmo seguem o arcade. Há também um **modo CRT** opcional (tecla `C`) para quem quer a
 sensação do fliperama.
@@ -113,7 +121,8 @@ src/main.js               laço principal (lógica fixa a 60 Hz) e telas: títul
 src/core/                 constantes, entrada (teclado/gamepad/toque), áudio sintetizado, RNG
 src/game/                 fase (colisão), Arthur, armas, itens, inimigos, chefes, diretor da fase
 src/levels/               dados das fases medidos do arcade
-src/render/               three.js: cenário 3D por tema, modelos 2.5D, efeitos, pós-processamento
+src/render/               three.js: cenário 3D por tema, personagens orgânicos (organic.js + creatures.js),
+                          itens/projéteis, efeitos e pós-processamento
 vendor/three/             three.js r169 (MIT), embutido para funcionar offline
 tests/                    testes headless (Node)
 tools/serve.mjs           servidor estático sem dependências
@@ -142,14 +151,15 @@ Parâmetros de depuração na URL:
 - `&x=2000&y=432` começa nessa posição;
 - `&god=1` deixa o Arthur invencível;
 - `&q=low` força a qualidade baixa;
-- `?gallery=all` mostra a galeria de modelos (também `gallery=bosses` e `gallery=items`).
+- `?gallery=all` mostra a galeria de modelos (também `gallery=bosses`, `gallery=items`, `gallery=arthur`
+  e `gallery=list&t=zombie,plant` para escolher quais mostrar).
 
 ## Créditos e aviso legal
 
 Projeto de fã, sem fins comerciais. *Ghosts'n Goblins*, Arthur e os demais personagens são marcas e
 propriedade da **Capcom**. Este repositório **não contém nenhum asset do jogo original**:
 
-- todos os modelos 3D e texturas são gerados proceduralmente em código;
+- todos os personagens, modelos 3D e texturas são gerados proceduralmente em código;
 - a trilha sonora é original e os efeitos são sintetizados em tempo real;
 - os mapas do arcade serviram apenas como referência de medida e não fazem parte do repositório.
 

@@ -1,7 +1,7 @@
 // Partículas, fragmentos de armadura e números de pontuação.
 import * as THREE from 'three';
 import { tex, textTexture } from './textures.js';
-import { M, bx, sp } from './models.js';
+import { M, bx, sp } from './base.js';
 
 const MAX = 2400;
 
