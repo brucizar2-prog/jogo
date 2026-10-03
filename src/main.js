@@ -95,7 +95,8 @@ class App {
     this.renderer.loadStage(this.game);
     this.hud.show(true);
     this.hud.setScreen('');
-    this.hud.setBanner(`<span class="big">FASE ${Math.min(s.stage, 6)}${s.stage === 7 ? ' — FINAL' : ''}</span><span class="blink">JOGADOR 1 PRONTO</span>`);
+    this._readyBanner = `<span class="big">FASE ${Math.min(s.stage, 6)}${s.stage === 7 ? ' — FINAL' : ''}</span><span class="blink">JOGADOR 1 PRONTO</span>`;
+    this.hud.setBanner(this._readyBanner);
     this.music.stop();
     this.setState('ready');
   }
@@ -115,6 +116,7 @@ class App {
     this.hud.show(false);
     this.hud.setScreen('');
     this.loadBackdrop(1);
+    this.renderer.prewarmExtra(['princess', 'satan']);
     const g = this.game;
     const P = g.player;
     P.armor = false; P.facing = 1; P.locked = true;
@@ -194,6 +196,15 @@ class App {
   }
 
   tick() {
+    // espera as esculturas dos personagens (geradas em segundo plano) antes de começar a cena
+    if ((this.state === 'intro' || (this.state === 'ready' && this.stateT >= 100)) && !this.renderer.meshesReady()) {
+      const pct = Math.round(this.renderer.meshesProgress() * 100);
+      const ld = `<span class="small">ESCULPINDO PERSONAGENS... ${pct}%</span>`;
+      this.hud.setBanner(this.state === 'ready' ? this._readyBanner + ld : ld);
+      this._loadingShown = true;
+      return;
+    }
+    if (this._loadingShown) { this._loadingShown = false; this.hud.setBanner(this.state === 'ready' ? this._readyBanner : null); }
     this.stateT++;
     const inp = this.input, s = this.session;
     if (inp.anyKey) { this.audio.ensure(); }

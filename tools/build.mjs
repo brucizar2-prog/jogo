@@ -25,9 +25,22 @@ const res = await build({
   target: ['es2020'],
   legalComments: 'none',
   plugins: [importMap],
+  logLevel: 'error',
 });
+// Web Worker que esculpe os personagens: vai embutido como texto e é criado via Blob
+const wres = await build({
+  entryPoints: [join(root, 'src/render/meshWorker.js')],
+  bundle: true,
+  format: 'iife',
+  minify: true,
+  write: false,
+  target: ['es2020'],
+  legalComments: 'none',
+  plugins: [importMap],
+});
+const workerSrc = wres.outputFiles[0].text;
 // "</script" dentro do JS fecharia a tag antes da hora
-const js = res.outputFiles[0].text.replace(/<\/script/gi, '<\\/script');
+const js = (`window.__MESH_WORKER_SRC=${JSON.stringify(workerSrc)};\n` + res.outputFiles[0].text).replace(/<\/script/gi, '<\\/script');
 const css = await readFile(join(root, 'css/style.css'), 'utf8');
 let html = await readFile(join(root, 'index.html'), 'utf8');
 

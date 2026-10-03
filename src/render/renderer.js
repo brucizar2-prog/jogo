@@ -8,7 +8,8 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { buildScenery, THEMES } from './scenery.js';
 import { createModel, M } from './models.js';
-import { ArthurOrganic, prewarm, prewarmStep } from './creatures.js';
+import { initCharacterEnv } from './creatures/core.js';
+import { createArthur, prewarm, prewarmDone, prewarmProgress, prewarmAll } from './creatures.js';
 import { Effects } from './effects.js';
 import { tex } from './textures.js';
 
@@ -82,6 +83,7 @@ export class Renderer {
     const pmrem = new THREE.PMREMGenerator(r);
     this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     this.scene.environmentIntensity = 0.22;
+    initCharacterEnv(r);
     // luzes base
     this.hemi = new THREE.HemisphereLight(0x8090c0, 0x201010, 0.6);
     this.scene.add(this.hemi);
@@ -143,11 +145,18 @@ export class Renderer {
 
   setCRT(on) { this.crt = on; this.retro.uniforms.uCRT.value = on ? 1 : 0; }
 
+  // esculturas dos personagens da fase prontas?
+  meshesReady() { return prewarmDone(); }
+  meshesProgress() { return prewarmProgress(); }
+  prewarmExtra(types) { prewarm([...(this.stageTypes || []), ...types]); }
+
   // ------------------------------------------------------------------ fase
   loadStage(game) {
     this.clearStage();
     const data = game.data;
-    this.prewarmMs = prewarm(stageCreatures(data));
+    this.stageTypes = stageCreatures(data);
+    prewarm(this.stageTypes);
+    if (!this._bgPrewarm) { this._bgPrewarm = true; setTimeout(() => prewarmAll([...this.stageTypes, 'princess', 'satan']), 0); }
     const theme = THEMES[data.theme];
     this.theme = theme;
     this.scene.background = new THREE.Color(theme.bg);
@@ -186,7 +195,7 @@ export class Renderer {
       this.scene.add(g);
       return g;
     });
-    this.player = new ArthurOrganic();
+    this.player = createArthur();
     this.scene.add(this.player.obj);
     this.snapCamera = true;
   }
@@ -207,7 +216,6 @@ export class Renderer {
 
   // ------------------------------------------------------------------ quadro
   frame(game, dt, time) {
-    prewarmStep();
     const seen = new Set();
     const lightReqs = [];
     const sync = (e, z = 0) => {
