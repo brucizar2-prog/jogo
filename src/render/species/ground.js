@@ -25,12 +25,17 @@ const zr = (r) => r.map((v) => v * ZK);
 const zhead = (list) => list;
 export function zombie() {
   const skin = 0x8ea4c8, dk = 0x5e7096, red = 0xb3261e, darkred = 0x7a1612;
+  // mechas: nascem no alto/atrás da cabeça e caem para trás e para os lados, desgrenhadas
   const hairStrands = [];
-  for (let i = 0; i < 18; i++) {
-    const a = (i / 18) * Math.PI * 2, s = Math.sin(i * 2.3), c = Math.cos(i * 1.7);
-    const b = zh([0.16 - Math.cos(a) * 0.08, 1.6 + Math.abs(Math.sin(a)) * 0.02, Math.sin(a) * 0.1]);
-    const out = [b[0] - 0.12 - 0.07 * Math.abs(s) - Math.max(0, -Math.cos(a)) * 0.08, b[1] + 0.06 + 0.07 * c, b[2] * 1.6 + 0.05 * s];
-    hairStrands.push(C('head', b, out, 0.065, 0.012, { k: 0.04 }));
+  const HC = [0.17, 1.55, 0];
+  for (let i = 0; i < 26; i++) {
+    const th = (i / 26) * Math.PI * 2 * 3.1, ph = 0.25 + 0.95 * ((i * 0.618) % 1);   // espiral sobre o crânio
+    const dir = [-Math.cos(ph) * 0.55 - 0.45, Math.sin(ph) * 0.9 + 0.1, Math.sin(th) * Math.cos(ph) * 1.1];
+    const n = Math.hypot(...dir); const d = dir.map((v) => v / n);
+    const b = [HC[0] + d[0] * 0.1, HC[1] + d[1] * 0.11, HC[2] + d[2] * 0.11];
+    const len = 0.12 + 0.07 * Math.abs(Math.sin(i * 3.7));
+    const tip = [b[0] + d[0] * len - 0.05, b[1] + d[1] * len * 0.8 + 0.03 * Math.sin(i * 1.9), b[2] + d[2] * len];
+    hairStrands.push(C('head', zh(b), zh(tip), 0.05, 0.009, { k: 0.035 }));
   }
   return {
     cell: 0.0125,
@@ -93,8 +98,9 @@ export function zombie() {
       layer('belt', 'leather', 0x1c1814, 0.01, [E('spine', [0.035, 0.86, 0], [0.13, 0.03, 0.155])]),
       // cabelo vermelho desgrenhado
       layer('hair', 'hair', 0xc8342a, 0.04, [
-        E('head', zh([0.17, 1.6, 0]), zr([0.135, 0.09, 0.135]), { rot: [0, 0, -0.2] }),
-        E('head', zh([0.08, 1.52, 0]), zr([0.095, 0.115, 0.125])),
+        E('head', zh([0.15, 1.61, 0]), zr([0.15, 0.085, 0.14]), { rot: [0, 0, -0.25] }),
+        E('head', zh([0.07, 1.53, 0]), zr([0.11, 0.12, 0.135])),
+        ...LR((s) => [E('head', zh([0.17, 1.55, 0.11 * s]), zr([0.08, 0.07, 0.05]))]),
         ...hairStrands,
       ], { rough: { amp: 0.005, freq: 40 }, pattern: mottle(0.22, 24) }),
       // garras escuras
