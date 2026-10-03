@@ -7,10 +7,13 @@ import { SPECIES } from './species/index.js';
 const params = new URLSearchParams(typeof location !== 'undefined' ? location.search : '');
 const LOW = (() => {
   const q = params.get('q');
-  try { return q === 'low' || (q !== 'high' && (matchMedia('(pointer: coarse)').matches || (navigator.hardwareConcurrency || 8) <= 4)); } catch (e) { return false; }
+  try { return q === 'low' || (q !== 'high' && (matchMedia('(pointer: coarse)').matches || (navigator.hardwareConcurrency || 8) <= 2)); } catch (e) { return false; }
 })();
 export const QUALITY = LOW ? 1.35 : 1;
-const ENGINE_VERSION = 'v2.4';
+// o Arthur (um só na tela, sempre em destaque) é esculpido sempre na qualidade máxima
+const HERO = new Set(['arthur']);
+const qualityFor = (key) => (HERO.has(key) ? 1 : QUALITY);
+const ENGINE_VERSION = 'v2.5';
 
 const READY = new Map();      // key -> resultado
 const PENDING = new Map();    // key -> Promise
@@ -19,7 +22,7 @@ let rr = 0, nextId = 1;
 const jobs = new Map();       // id -> { resolve, reject, key }
 
 function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
-const cacheKey = (key) => `${ENGINE_VERSION}:${key}:${QUALITY}:${hashStr(SPECIES[key].toString())}`;
+const cacheKey = (key) => `${ENGINE_VERSION}:${key}:${qualityFor(key)}:${hashStr(SPECIES[key].toString())}`;
 
 // ------------------------------------------------------------------ IndexedDB
 let dbp = null;
@@ -80,7 +83,7 @@ function initWorkers() {
       ev.preventDefault && ev.preventDefault();
       // worker inutilizável: refaz os trabalhos dele no thread principal
       workers = workers.filter((x) => x !== w);
-      for (const [id, j] of jobs) if (j.w === w) { jobs.delete(id); try { j.resolve(buildMeshSync(j.key, QUALITY)); } catch (err) { j.reject(err); } }
+      for (const [id, j] of jobs) if (j.w === w) { jobs.delete(id); try { j.resolve(buildMeshSync(j.key, qualityFor(j.key))); } catch (err) { j.reject(err); } }
     };
     workers.push(w);
   }
@@ -89,12 +92,12 @@ function initWorkers() {
 
 function runJob(key) {
   const ws = initWorkers();
-  if (!ws.length) return simplifierReady.then(() => buildMeshSync(key, QUALITY));
+  if (!ws.length) return simplifierReady.then(() => buildMeshSync(key, qualityFor(key)));
   return new Promise((resolve, reject) => {
     const w = ws[rr++ % ws.length];
     const id = nextId++;
     jobs.set(id, { resolve, reject, key, w });
-    w.postMessage({ id, key, quality: QUALITY });
+    w.postMessage({ id, key, quality: qualityFor(key) });
   });
 }
 
@@ -115,7 +118,7 @@ export function requestSpecies(key) {
   })().catch((err) => {
     console.warn('falha ao esculpir', key, err);
     PENDING.delete(key);
-    const r = buildMeshSync(key, QUALITY);
+    const r = buildMeshSync(key, qualityFor(key));
     READY.set(key, r);
     return r;
   });
@@ -129,7 +132,7 @@ export const progress = (keys) => (keys.length ? keys.filter((k) => READY.has(k)
 
 // acesso síncrono (gera no thread principal se ainda não estiver pronto)
 export function getSpeciesData(key) {
-  if (!READY.has(key)) READY.set(key, buildMeshSync(key, QUALITY));
+  if (!READY.has(key)) READY.set(key, buildMeshSync(key, qualityFor(key)));
   return READY.get(key);
 }
 export const hasSpecies = (key) => !!SPECIES[key];

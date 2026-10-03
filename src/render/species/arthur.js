@@ -9,21 +9,6 @@ export const ARTHUR_P = {
   shoulder: [0, 1.27, 0.34], elbow: [0.03, 1.02, 0.42], wrist: [0.07, 0.8, 0.45],
 };
 
-// coraçõezinhos vermelhos na cueca (padrão no plano em volta do quadril)
-function hearts(x, y, z, c) {
-  // coordenadas no "cilindro" em volta do quadril (ou da coxa)
-  const leg = y < 0.66;
-  const cz = leg ? Math.sign(z) * 0.15 : 0;
-  const u = Math.atan2(z - cz, x) * (leg ? 0.13 : 0.22), v = y;
-  const q = 0.115;
-  const cu = Math.round(u / q), off = (((cu % 2) + 2) % 2) * q * 0.5;
-  const cv = Math.round((v - off) / q);
-  const hx = (u - cu * q) / 0.034, hy = (v - (cv * q + off)) / 0.034 + 0.25;
-  const a = hx * hx + hy * hy - 1;
-  if (a * a * a - hx * hx * hy * hy * hy < 0) return hex(0xd3152a);
-  return c;
-}
-
 // corpo (tronco e membros) — usado pela pele e, inflado, pela cota por baixo da armadura
 function bodyPrims(g = 0) {
   return [
@@ -53,29 +38,66 @@ function bodyPrims(g = 0) {
   ];
 }
 
+// corpo sem armadura: troncudo e musculoso (peitoral, ombros, braços e panturrilhas marcados)
+function nakedPrims() {
+  return [
+    E('hips', [0, 0.79, 0], [0.18, 0.14, 0.21]),
+    E('spine', [0.05, 0.96, 0], [0.165, 0.16, 0.2]),
+    ...[1.04, 0.97, 0.9].flatMap((y) => LR((s) => [E('spine', [0.175 - (1.04 - y) * 0.15, y, 0.045 * s], [0.035, 0.033, 0.04], { k: 0.03 })])),
+    E('chest', [0.03, 1.16, 0], [0.18, 0.19, 0.255]),
+    ...LR((s) => [
+      E('chest', [0.14, 1.2, 0.1 * s], [0.085, 0.072, 0.11], { k: 0.035, rot: [0.15 * s, 0, 0] }),
+      E('chest', [-0.02, 1.12, 0.19 * s], [0.11, 0.13, 0.07], { k: 0.05 }),
+      C('chest', [0, 1.34, 0.06 * s], [0, 1.29, 0.24 * s], 0.07, 0.06, { k: 0.05 }),
+    ]),
+    ...LR((s, sd) => [
+      E('upperarm.' + sd, [0, 1.28, 0.33 * s], [0.11, 0.11, 0.115]),
+      C('upperarm.' + sd, [0, 1.25, 0.35 * s], [0.03, 1.03, 0.415 * s], 0.082, 0.066),
+      E('upperarm.' + sd, [0.065, 1.15, 0.385 * s], [0.06, 0.085, 0.06], { k: 0.03 }),
+      E('upperarm.' + sd, [-0.035, 1.16, 0.38 * s], [0.055, 0.08, 0.06], { k: 0.03 }),
+      C('forearm.' + sd, [0.03, 1.02, 0.42 * s], [0.07, 0.82, 0.45 * s], 0.072, 0.05),
+      E('forearm.' + sd, [0.05, 0.96, 0.43 * s], [0.06, 0.07, 0.06], { k: 0.03 }),
+      // punho fechado grande
+      E('hand.' + sd, [0.085, 0.75, 0.46 * s], [0.066, 0.078, 0.055]),
+      C('hand.' + sd, [0.12, 0.77, 0.46 * s], [0.13, 0.7, 0.455 * s], 0.04, 0.035, { k: 0.02 }),
+      C('hand.' + sd, [0.095, 0.79, 0.415 * s], [0.135, 0.76, 0.395 * s], 0.025, 0.021, { k: 0.02 }),
+      // pernas fortes
+      C('thigh.' + sd, [0, 0.74, 0.15 * s], [0.035, 0.44, 0.16 * s], 0.13, 0.085),
+      E('thigh.' + sd, [0.06, 0.6, 0.16 * s], [0.08, 0.12, 0.09], { k: 0.04 }),
+      S('shin.' + sd, [0.05, 0.42, 0.16 * s], 0.075, { k: 0.04 }),
+      E('shin.' + sd, [-0.025, 0.29, 0.16 * s], [0.08, 0.11, 0.075]),
+      C('shin.' + sd, [0.035, 0.41, 0.16 * s], [0.01, 0.12, 0.165 * s], 0.07, 0.052),
+      E('foot.' + sd, [0.08, 0.05, 0.165 * s], [0.15, 0.058, 0.078]),
+      E('foot.' + sd, [0.19, 0.045, 0.165 * s], [0.05, 0.04, 0.07], { k: 0.03 }),
+      S('foot.' + sd, [-0.03, 0.07, 0.165 * s], 0.06, { k: 0.04 }),
+    ]),
+  ];
+}
+
 export function arthur() {
   const metal = 0xc2c9d6, trim = 0x8a93a6, skin = 0xe3a17a, beard = 0x6a3417;
   const k = 0.012;            // placas: união quase dura (bordas nítidas)
   return {
-    cell: 0.0135,
+    cell: 0.0115,
+    ratio: 0.6,
     bones: humanoidBones(ARTHUR_P),
     layers: [
       // ---------------------------------------------------------------- rosto e pescoço (sempre visíveis)
       layer('face', 'skin', skin, 0.05, [
         C('neck', [0.03, 1.28, 0], [0.05, 1.46, 0], 0.1, 0.09),
-        E('head', [0.05, 1.62, 0], [0.18, 0.2, 0.17]),
+        E('head', [0.05, 1.615, 0], [0.172, 0.192, 0.162]),
         E('head', [0.13, 1.5, 0], [0.115, 0.09, 0.13]),
         ...LR((s) => [E('head', [0.19, 1.56, 0.08 * s], [0.065, 0.055, 0.055], { k: 0.04 })]),
         E('head', [0.215, 1.67, 0], [0.04, 0.025, 0.12], { k: 0.035 }),
         C('head', [0.228, 1.645, 0], [0.27, 1.575, 0], 0.025, 0.034, { k: 0.03 }),
         E('head', [0.268, 1.57, 0], [0.03, 0.025, 0.036], { k: 0.02 }),
         ...LR((s) => [
-          E('head', [0.035, 1.59, 0.165 * s], [0.04, 0.06, 0.022], { k: 0.02 }),
+          E('head', [0.035, 1.59, 0.158 * s], [0.04, 0.058, 0.022], { k: 0.02 }),
           S('head', [0.222, 1.625, 0.064 * s], 0.034, { neg: true, k: 0.018 }),
         ]),
       ], { pattern: mottle(0.06, 7), rough: { amp: 0.0012, freq: 40 } }),
       // ---------------------------------------------------------------- corpo (sem armadura)
-      layer('skin', 'skin', skin, 0.05, bodyPrims(0), { pattern: mottle(0.06, 7), rough: { amp: 0.0012, freq: 40 }, set: 'naked' }),
+      layer('skin', 'skin', skin, 0.05, nakedPrims(), { pattern: mottle(0.06, 7), rough: { amp: 0.0012, freq: 40 }, set: 'naked' }),
       // cota acolchoada escura por baixo das placas (só aparece nas frestas)
       layer('mail', 'leather', 0x464852, 0.05, bodyPrims(0), { cavity: 0.5, cell: 0.02, set: 'armored' }),
       // ---------------------------------------------------------------- barba, bigode, sobrancelhas, cabelo
@@ -89,16 +111,23 @@ export function arthur() {
         ]),
       ], { rough: { amp: 0.005, freq: 45 }, pattern: mottle(0.12, 30) }),
       // cabelo (escondido pelo elmo)
-      layer('hair', 'hair', beard, 0.04, [
-        E('head', [0.04, 1.7, 0], [0.19, 0.155, 0.176]),
-        E('head', [-0.05, 1.62, 0], [0.135, 0.14, 0.158]),
-        E('head', [0.19, 1.75, 0], [0.05, 0.03, 0.12], { k: 0.04 }),
-      ], { rough: { amp: 0.006, freq: 40 }, pattern: mottle(0.12, 30), set: 'naked' }),
+      layer('hair', 'hair', beard, 0.035, [
+        E('head', [0.04, 1.69, 0], [0.18, 0.148, 0.168]),
+        E('head', [-0.04, 1.62, 0], [0.135, 0.13, 0.152]),
+        // topete jogado para trás, com uma onda no meio
+        E('head', [0.1, 1.79, 0], [0.12, 0.05, 0.12], { rot: [0, 0, 0.3], k: 0.05 }),
+        E('head', [0.17, 1.75, 0.02], [0.06, 0.035, 0.1], { rot: [0, 0, 0.35], k: 0.04 }),
+        ...LR((s) => [E('head', [0.08, 1.64, 0.15 * s], [0.07, 0.06, 0.025], { k: 0.03 })]),
+      ], { rough: { amp: 0.004, freq: 34 }, pattern: (x, y, z, c) => {
+        // mechas: listras suaves no sentido do penteado (frente → nuca)
+        const st = Math.sin(z * 70 + Math.sin(x * 9) * 2.5);
+        return c.map((v) => v * (0.86 + 0.14 * st));
+      }, set: 'naked' }),
       // ---------------------------------------------------------------- cueca
       layer('boxers', 'cloth', 0xf4efe4, 0.04, [
         E('hips', [0, 0.765, 0], [0.205, 0.155, 0.235]),
         ...LR((s, sd) => [C('thigh.' + sd, [0, 0.74, 0.15 * s], [0.02, 0.55, 0.155 * s], 0.137, 0.125)]),
-      ], { pattern: hearts, rough: { amp: 0.002, freq: 25 }, keep: 0.6, cell: 0.0105, set: 'naked' }),
+      ], { fx: 'hearts', rough: { amp: 0.002, freq: 25 }, set: 'naked' }),
       // ---------------------------------------------------------------- armadura
       layer('armor', 'metal', metal, k, [
         // peitoral com aresta central e gola

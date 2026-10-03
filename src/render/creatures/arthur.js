@@ -38,7 +38,8 @@ export class ArthurOrganic extends OrganicModel {
     let hipsY = 0, lean = 0;
     // braços junto ao corpo (o modelo é esculpido com os braços levemente abertos)
     const tuck = (side, a) => { B['upperarm.' + side].rotation.x = (side === 'R' ? 1 : -1) * a; };
-    tuck('R', 0.12); tuck('L', 0.12);
+    const tk = showArmor ? 0.12 : 0.17;
+    tuck('R', tk); tuck('L', tk);
     let climbing = false;
     if (p.dead) {
       const k = Math.min(1, p.deathT / 30);
@@ -105,7 +106,7 @@ export class ArthurOrganic extends OrganicModel {
     if (climbing) {
       this.yaw += (Math.PI / 2 - this.yaw) * 0.4;
       this.inner.rotation.y = this.yaw;
-    } else if (!p.dead) this.face(p.facing);
+    } else if (!p.dead) this.face(p.facing, 0.6);
     if (frog) {
       this.frogM.obj.rotation.y = p.facing > 0 ? -0.4 : Math.PI + 0.4;
       this.frogM.obj.scale.set(1, p.onGround ? 1 : 1.2, 1);

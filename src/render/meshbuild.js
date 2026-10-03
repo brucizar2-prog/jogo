@@ -12,13 +12,13 @@ export const simplifierReady = (async () => {
 export function buildMeshSync(key, quality = 1) {
   const t0 = Date.now();
   const spec = SPECIES[key]();
-  const layers = buildSpecies(spec, { quality, simplifier, ratio: quality > 1 ? 0.3 : 0.42 });
+  const layers = buildSpecies(spec, { quality, simplifier, ratio: spec.ratio ?? (quality > 1 ? 0.3 : 0.42) });
   return {
     key,
     bones: spec.bones,
     rigid: spec.rigid || [],
     scale: spec.scale || 1,
-    layers: layers.map((L, i) => ({ ...L, mat: spec.layers[i].mat })),
+    layers: layers.map((L, i) => ({ ...L, mat: spec.layers[i].mat, fx: spec.layers[i].fx })),
     ms: Date.now() - t0,
   };
 }

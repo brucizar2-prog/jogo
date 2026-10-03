@@ -45,7 +45,7 @@ const RetroShader = {
       } else col = texture2D(tDiffuse, uv).rgb;
       vec2 v = vUv - 0.5;
       col *= smoothstep(0.95, 0.25, length(v*vec2(1.0, 1.15)));
-      col += (rand(vUv*uRes + uTime) - 0.5) * 0.035;
+      col += (rand(vUv*uRes + uTime) - 0.5) * 0.02;
       col *= 1.0 - uFade;
       gl_FragColor = vec4(col, 1.0);
     }`,
@@ -67,9 +67,10 @@ export class Renderer {
   constructor(canvas) {
     this.canvas = canvas;
     // qualidade automática: aparelhos de toque/modestos usam resolução e sombras menores
-    const q = new URLSearchParams(location.search).get('q');
+    const params = new URLSearchParams(location.search);
+    const q = params.get('q');
     const mobile = matchMedia('(pointer: coarse)').matches;
-    this.low = q === 'low' || (q !== 'high' && (mobile || (navigator.hardwareConcurrency || 8) <= 4));
+    this.low = q === 'low' || (q !== 'high' && (mobile || (navigator.hardwareConcurrency || 8) <= 2));
     const r = new THREE.WebGLRenderer({ canvas, antialias: !this.low, powerPreference: 'high-performance' });
     r.setPixelRatio(Math.min(window.devicePixelRatio || 1, this.low ? 1 : 1.75));
     r.outputColorSpace = THREE.SRGBColorSpace;
@@ -104,7 +105,11 @@ export class Renderer {
     const nPool = this.low ? 6 : 10;
     for (let i = 0; i < nPool; i++) { const l = new THREE.PointLight(0xffffff, 0, 6, 2); this.scene.add(l); this.pool.push(l); }
     // pós-processamento
-    this.composer = new EffectComposer(r);
+    // alvo com multiamostragem (MSAA): sem isso o pós-processamento desliga o antialiasing
+    const msaa = params.has('msaa') ? +params.get('msaa') : this.low || r.getPixelRatio() > 1.4 ? 2 : 4;
+    const rt = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: msaa });
+    this.composer = new EffectComposer(r, rt);
+    this.composer.setPixelRatio(r.getPixelRatio());
     this.composer.addPass(new RenderPass(this.scene, this.camera));
     this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.55, 0.45, 0.82);
     this.composer.addPass(this.bloom);

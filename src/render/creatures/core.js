@@ -100,6 +100,48 @@ export function mat(name) {
   if (!MATS.has(k)) MATS.set(k, makeMat(name));
   return MATS.get(k);
 }
+// padrões desenhados por pixel no shader (nítidos em qualquer resolução), na posição de repouso
+// do modelo — acompanham o tecido quando o esqueleto se mexe
+const FX = {
+  // coraçõezinhos vermelhos da cueca do Arthur
+  hearts: `{
+    vec3 P = vObjPos;
+    float leg = step(P.y, 0.66);
+    float cz = leg * sign(P.z) * 0.15;
+    float u = atan(P.z - cz, P.x) * mix(0.22, 0.13, leg);
+    float q = 0.115;
+    float cu = floor(u / q + 0.5);
+    float off = mod(cu, 2.0) * q * 0.5;
+    float cv = floor((P.y - off) / q + 0.5);
+    float hx = (u - cu * q) / 0.034;
+    float hy = (P.y - (cv * q + off)) / 0.034 + 0.25;
+    float a = hx * hx + hy * hy - 1.0;
+    float f = a * a * a - hx * hx * hy * hy * hy;
+    float w = clamp(fwidth(f), 1e-4, 0.3);
+    float m = 1.0 - smoothstep(-w, w, f);
+    diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(0.72, 0.009, 0.03), m);
+  }`,
+};
+export function fxMat(name, fx) {
+  const k = 'fx:' + name + ':' + fx;
+  if (MATS.has(k)) return MATS.get(k);
+  const m = makeMat(name);
+  const rim = m.onBeforeCompile;
+  m.onBeforeCompile = (shader, r) => {
+    rim(shader, r);
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vObjPos;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvObjPos = position;');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vObjPos;')
+      .replace('#include <color_fragment>', '#include <color_fragment>\n' + FX[fx]);
+  };
+  const key = m.customProgramCacheKey();
+  m.customProgramCacheKey = () => key + ':' + fx;
+  m.name = name + '+' + fx;
+  MATS.set(k, m);
+  return m;
+}
 // material de cor única (peças rígidas)
 export function rmat(name, color, extra) {
   const k = name + ':' + color + (extra ? JSON.stringify(extra) : '');
@@ -122,7 +164,7 @@ export function getSpecies(key) {
     g.setAttribute('skinWeight', new THREE.BufferAttribute(L.skinWeight, 4));
     g.setIndex(new THREE.BufferAttribute(L.indices, 1));
     g.computeBoundingSphere();
-    return { name: L.name, geometry: g, material: mat(L.mat) };
+    return { name: L.name, geometry: g, material: L.fx ? fxMat(L.mat, L.fx) : mat(L.mat) };
   });
   const sp = { key, bones: d.bones, rigid: d.rigid || [], scale: d.scale || 1, layers, ms: d.ms };
   BUILT.set(key, sp);
