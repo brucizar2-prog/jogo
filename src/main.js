@@ -132,7 +132,7 @@ class App {
     if (t === 1) say('Numa noite enluarada, o cavaleiro <span class="gold">Arthur</span> descansava ao lado da <span class="gold">Princesa Prin Prin</span>...');
     if (t === 150) {
       say('...quando um demônio surgiu dos céus!');
-      const k = new Enemy(g, P.x + 260, P.y - 150, {});
+      const k = new Enemy(g, 'satan', P.x + 260, P.y - 150, {});
       k.type = 'satan'; k.w = 30; k.h = 40; k.harmful = false; k.hittable = false; k.wings = 1; k.state = 'hover'; k.facing = -1;
       k.update = () => { k.pre(); };
       g.enemies.push(k);

@@ -123,7 +123,7 @@ class GargoyleO extends OrganicModel {
 
 // RED ARREMER: medita (perch), acorda, anda, paira e dá rasantes; abre a boca ao cuspir fogo
 class ArremerO extends GargoyleO {
-  constructor() { super('arremer', { mem: 0x34467e, bone: 0xb01e16 }); }
+  constructor() { super('arremer', { mem: 0x3a4f8c, bone: 0xb01e16 }); }
   update(e) {
     this.face(e.facing);
     this.resetPose();

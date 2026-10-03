@@ -183,7 +183,7 @@ function taperTube(pts, radii, radial = 9, cap = true) {
   for (let i = 0; i < n - 1; i++) {
     for (let j = 0; j < radial; j++) {
       const a = i * (radial + 1) + j, b = a + radial + 1;
-      idx.push(a, b, a + 1, b, b + 1, a + 1);
+      idx.push(a, a + 1, b, b, a + 1, b + 1);
     }
   }
   if (cap) {
@@ -191,7 +191,7 @@ function taperTube(pts, radii, radial = 9, cap = true) {
     const ti = pos.length / 3;
     pos.push(tip.x, tip.y, tip.z); nor.push(T.x, T.y, T.z);
     const base = (n - 1) * (radial + 1);
-    for (let j = 0; j < radial; j++) idx.push(base + j, ti, base + j + 1);
+    for (let j = 0; j < radial; j++) idx.push(base + j, base + j + 1, ti);
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
