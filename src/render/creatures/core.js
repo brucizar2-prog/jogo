@@ -239,6 +239,7 @@ function teethGeo(p) {
       const u = p.count > 1 ? i / (p.count - 1) - 0.5 : 0;
       const len = p.len * (1 - p.jag * hash1(i + p.count * 3)) * (p.fang && (i === 0 || i === p.count - 1) ? 1.6 : 1);
       const c = new THREE.ConeGeometry(p.r * (0.85 + 0.3 * hash1(i * 7 + 1)), len, 7, 1);
+      c.rotateX(Math.PI);                                // o cone nasce com a ponta para cima
       c.translate(0, -len / 2, 0);                       // base em y=0, ponta para baixo
       if (p.dir < 0) c.rotateX(Math.PI);                 // dentes de baixo apontam para cima
       c.rotateZ(p.tilt + (hash1(i * 3 + 2) - 0.5) * 0.25);
